@@ -149,8 +149,12 @@ jobs:
         run: |
           echo "" >> "$GITHUB_STEP_SUMMARY"
           if [ "${{ steps.upload-apk.outcome }}" = "success" ]; then
-            echo "### :white_check_mark: APK available" >> "$GITHUB_STEP_SUMMARY"
-            echo "Run artifact \`MobileAIAgent-debug\` **and** the release asset below." >> "$GITHUB_STEP_SUMMARY"
+            echo "### :warning: Get the APK from the release, not from Artifacts" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "This account's **artifact storage quota is exhausted**, so" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`upload-artifact\` reports success but stores nothing — the" >> "$GITHUB_STEP_SUMMARY"
+            echo "Artifacts list stays empty even on a green build. It resets every" >> "$GITHUB_STEP_SUMMARY"
+            echo "6–12 h; until then use the release asset, which has no such limit." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "### :warning: APK is in the release, not in Artifacts" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"

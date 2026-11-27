@@ -36,10 +36,26 @@ Download: **<https://github.com/8dia479/MobileAiAgent/releases/tag/debug-apk>**
 (the `debug-apk` release → `app-debug-<sha>.apk`, 21.1 MB). The repository is
 private, so you must be signed in to GitHub to fetch it.
 
-The APK is published as a rolling **release** asset rather than a per-run
-artifact because the account's artifact storage quota was exhausted during
-development, which made `upload-artifact` fail even on a green build. Per-run
-artifacts are still attached whenever the quota allows.
+### Why Artifacts is empty even on a green build
+
+This is a **GitHub account limit, not a build problem**, and it is worth being
+explicit about because the symptom is confusing:
+
+```
+Assemble debug APK                -> success   (app-debug.apk, 21.1 MB)
+Publish APK to a rolling release  -> success
+Upload APK                        -> upload-artifact: Failed to CreateArtifact:
+                                     Artifact storage quota has been hit.
+```
+
+* Per-account artifact storage is exhausted, so `upload-artifact` stores nothing.
+  The repository contains **0 artifacts for every run**, including successful ones.
+* It resets every 6–12 h, and the step is `continue-on-error`, so it will start
+  populating by itself once the quota returns — no code change needed.
+* **Release assets are not covered by that quota**, so the APK is published there.
+
+The run summary now states this explicitly instead of leaving an empty Artifacts
+tab to be interpreted as a failed build.
 
 Also granted `contents: write` — the first release attempt reported success while
 creating nothing, because the workflow only had `contents: read` and
