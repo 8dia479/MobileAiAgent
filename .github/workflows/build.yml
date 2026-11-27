@@ -144,6 +144,16 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew --no-daemon assembleDebug --stacktrace
 
+      - name: Report artifact storage
+        if: failure() && steps.upload-apk.outcome == 'failure'
+        run: |
+          echo "### :warning: Artifact upload failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub's per-account artifact storage quota is exhausted, so" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`upload-artifact\` cannot store the APK. The build itself succeeded." >> "$GITHUB_STEP_SUMMARY"
+          echo "Download the APK from the release asset instead:" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/${{ github.repository }}/releases/tag/debug-apk" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Report APK
         run: |
           APK=app/build/outputs/apk/debug/app-debug.apk
@@ -154,8 +164,34 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Download it from the **Artifacts** section of this run." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload APK
+      # The APK is the deliverable. Note that GitHub's artifact storage is
+      # quota-limited per account and the upload can fail with
+      # "Failed to CreateArtifact: Artifact storage quota has been hit" even
+      # though the build succeeded. That is intentionally fatal here so it is
+      # never silently missing again — the release asset below is the fallback
+      # for downloads, but a red build is the honest signal.
+      - name: Publish APK to a rolling release
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/arena/')
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          TAG=debug-apk
+          SHA=$(git rev-parse --short HEAD)
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Debug APK" \
+              --notes "Automatic debug builds. Latest: commit $SHA on ${{ github.ref_name }}." --prerelease \
+              || echo "WARNING: could not create release (needs contents: write)"
+          fi
+          cp "$APK" "app-debug-$SHA.apk"
+          gh release upload "$TAG" "app-debug-$SHA.apk" --clobber
+          echo "### :link: APK download" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/${{ github.repository }}/releases/download/$TAG/app-debug-$SHA.apk" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK
+        id: upload-apk
         uses: actions/upload-artifact@v4
         with:
           name: MobileAIAgent-debug
@@ -183,28 +219,9 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
-      # Artifact storage is quota-limited (it was exhausted during development).
+      # Runs before the artifact upload on purpose: release assets are not subject
+      # to the artifact storage quota, so this is the path that always works.
       # A release asset has no such limit and gives a permanent download link.
-      - name: Publish APK to a rolling release
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/arena/')
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          APK=app/build/outputs/apk/debug/app-debug.apk
-          TAG=debug-apk
-          SHA=$(git rev-parse --short HEAD)
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" --title "Debug APK" \
-              --notes "Automatic debug builds. Latest: commit $SHA on ${{ github.ref_name }}." --prerelease \
-              || echo "WARNING: could not create release (needs contents: write)"
-          fi
-          cp "$APK" "app-debug-$SHA.apk"
-          gh release upload "$TAG" "app-debug-$SHA.apk" --clobber
-          echo "### :link: APK download" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "https://github.com/${{ github.repository }}/releases/download/$TAG/app-debug-$SHA.apk" >> "$GITHUB_STEP_SUMMARY"
-
       - name: Upload build logs on failure
         if: failure()
         continue-on-error: true
