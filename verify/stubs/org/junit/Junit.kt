@@ -42,3 +42,20 @@ object Assert {
         throw AssertionError("expected ${expected.name} but nothing was thrown")
     }
 }
+
+/**
+ * JUnit's Assume: a failed assumption *skips* a test rather than failing it.
+ * The Gradle build uses the real org.junit.Assume; this stub keeps the offline
+ * harness behaviourally identical.
+ */
+object Assume {
+    class AssumptionViolatedException(message: String) : RuntimeException(message)
+
+    @JvmStatic fun assumeTrue(condition: Boolean) {
+        if (!condition) throw AssumptionViolatedException("assumption failed")
+    }
+
+    @JvmStatic fun assumeTrue(message: String, condition: Boolean) {
+        if (!condition) throw AssumptionViolatedException(message)
+    }
+}

@@ -138,6 +138,10 @@ jobs:
             grep -E "^(FAILURE:|\* What went wrong|> Task .* FAILED|> .*Could not|> .*error:)" gradle.log | head -10 | while IFS= read -r line; do
               echo "::error::$(printf '%s' "$line" | sed 's/::/:/g' | cut -c1-900)"
             done
+            # A *runtime* test failure only prints ':app:testDebugUnitTest FAILED'
+            # in the log; which test and why live in the XML reports. Emit them as
+            # annotations so the run page shows the actual assertion.
+            python3 verify/report_test_failures.py || true
             exit "$STATUS"
           fi
 

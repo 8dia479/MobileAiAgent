@@ -1,6 +1,6 @@
 package com.mobileaiagent
 
-import com.mobileaiagent.testkit.RequiresShell
+import com.mobileaiagent.testkit.ShellProbe
 import com.mobileaiagent.tools.builtin.ShellHistory
 import com.mobileaiagent.tools.builtin.ShellRunner
 import com.mobileaiagent.tools.builtin.TerminalPolicy
@@ -156,8 +156,8 @@ class TerminalPolicyTest {
     // ------------------------------------------------------------- execution
 
     @Test
-    @RequiresShell
     fun runsARealCommandAndCapturesBothStreams() {
+        ShellProbe.assumeShellAvailable()
         val result = ShellRunner.run(
             "echo out; echo err 1>&2; exit 3",
             cwd = java.io.File(System.getProperty("java.io.tmpdir")),
@@ -170,8 +170,8 @@ class TerminalPolicyTest {
     }
 
     @Test
-    @RequiresShell
     fun feedsStdinToTheProcess() {
+        ShellProbe.assumeShellAvailable()
         val result = ShellRunner.run(
             "cat",
             cwd = java.io.File(System.getProperty("java.io.tmpdir")),
@@ -183,8 +183,8 @@ class TerminalPolicyTest {
     }
 
     @Test
-    @RequiresShell
     fun killsCommandsThatExceedTheTimeout() {
+        ShellProbe.assumeShellAvailable()
         val result = ShellRunner.run(
             "sleep 30",
             cwd = java.io.File(System.getProperty("java.io.tmpdir")),
@@ -196,8 +196,8 @@ class TerminalPolicyTest {
     }
 
     @Test
-    @RequiresShell
     fun largeOutputIsTruncatedNotOom() {
+        ShellProbe.assumeShellAvailable()
         // 200k lines would be ~1.2 MB; the bound is 4000 bytes here.
         val result = ShellRunner.run(
             "seq 1 200000",
@@ -210,8 +210,8 @@ class TerminalPolicyTest {
     }
 
     @Test
-    @RequiresShell
     fun cancellationKillsTheProcess() {
+        ShellProbe.assumeShellAvailable()
         val token = com.mobileaiagent.core.util.CancellationToken()
         Thread {
             Thread.sleep(500)
@@ -228,8 +228,8 @@ class TerminalPolicyTest {
     }
 
     @Test
-    @RequiresShell
     fun missingBinaryReportsExit127InsteadOfCrashing() {
+        ShellProbe.assumeShellAvailable()
         val result = ShellRunner.run(
             "definitely_not_a_real_binary_xyz",
             cwd = java.io.File(System.getProperty("java.io.tmpdir")),

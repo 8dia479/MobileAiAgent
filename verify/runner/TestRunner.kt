@@ -47,8 +47,13 @@ object TestRunner {
                     passed++
                     println("PASS  $label")
                 } catch (invocation: java.lang.reflect.InvocationTargetException) {
-                    failed++
                     val cause = invocation.cause ?: invocation
+                    if (cause is org.junit.Assume.AssumptionViolatedException) {
+                        skipped++
+                        println("SKIP  $label (${cause.message})")
+                        continue
+                    }
+                    failed++
                     println("FAIL  $label\n      ${cause::class.java.simpleName}: ${cause.message}")
                     cause.stackTrace.take(6).forEach { println("        at $it") }
                     failures.add(label)
