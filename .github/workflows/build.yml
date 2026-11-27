@@ -24,8 +24,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# `contents: write` is required to create the rolling debug-apk release that
+# carries the APK. Everything else only needs read.
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   # ---------------------------------------------------------------- fast checks
@@ -192,9 +194,11 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           TAG=debug-apk
           SHA=$(git rev-parse --short HEAD)
-          gh release view "$TAG" >/dev/null 2>&1 || \
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --title "Debug APK" \
-              --notes "Automatic debug builds. Latest: commit $SHA on ${{ github.ref_name }}." --prerelease
+              --notes "Automatic debug builds. Latest: commit $SHA on ${{ github.ref_name }}." --prerelease \
+              || echo "WARNING: could not create release (needs contents: write)"
+          fi
           cp "$APK" "app-debug-$SHA.apk"
           gh release upload "$TAG" "app-debug-$SHA.apk" --clobber
           echo "### :link: APK download" >> "$GITHUB_STEP_SUMMARY"
