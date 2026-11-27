@@ -26,8 +26,6 @@ open class HttpClientEngineConfig {
 class HttpClient(val engine: Any? = null) {
     constructor(engine: Any, block: HttpClientConfig<Any>.() -> Unit) : this(engine)
 
-    suspend fun get(url: String, block: HttpRequestBuilder.() -> Unit = {}): HttpResponse = HttpResponse()
-    suspend fun post(url: String, block: HttpRequestBuilder.() -> Unit = {}): HttpResponse = HttpResponse()
     fun close() {}
 }
 

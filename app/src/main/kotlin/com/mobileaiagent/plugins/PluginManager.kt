@@ -91,7 +91,10 @@ class PluginManager(
         val granted = plugin.permissionsCsv.split(',').filter { it.isNotBlank() }.toSet()
         val tools = manifest["tools"].asArrayOrNull() ?: return
         for (toolJson in tools) {
-            val toolId = toolJson.stringOr("id", "").ifBlank { continue }
+            // No `continue` here: that is a Kotlin 2.2 language feature and this
+            // module compiles with 2.1, where it is a hard error inside a lambda.
+            val toolId = toolJson.stringOr("id", "")
+            if (toolId.isBlank()) continue
             val declaredPerms = toolJson.stringList("permissions")
             val missing = declaredPerms.filter { it !in granted }
             val tool = DeclarativePluginTool(
