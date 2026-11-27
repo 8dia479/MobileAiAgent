@@ -132,13 +132,56 @@ class MeshRendererTest {
         Assert.assertEquals('P'.code.toByte(), png[1])
         Assert.assertEquals('N'.code.toByte(), png[2])
         Assert.assertEquals('G'.code.toByte(), png[3])
-        val file = File.createTempFile("render", ".png")
-        file.writeBytes(png)
-        val decoded = javax.imageio.ImageIO.read(file)
-        Assert.assertNotNull("PNG must be decodable", decoded)
+        // javax.imageio is not part of the Android classpath, so decoding is done
+        // by hand. That is also a stronger test: it verifies the chunk structure
+        // and inflates the IDAT stream instead of trusting a library.
+        val decoded = decodePng(png)
         Assert.assertEquals(240, decoded.width)
         Assert.assertEquals(180, decoded.height)
-        file.delete()
+        // The inflated stream is scanline-filtered RGBA, not one entry per pixel.
+        Assert.assertEquals(180 * (1 + 240 * 4), decoded.pixels.size)
+    }
+
+    /** Minimal PNG reader: signature, IHDR, concatenated IDAT, zlib inflate. */
+    private data class DecodedPng(val width: Int, val height: Int, val pixels: ByteArray)
+
+    private fun decodePng(png: ByteArray): DecodedPng {
+        Assert.assertEquals(0x89.toByte(), png[0])
+        var pos = 8
+        var width = 0
+        var height = 0
+        val idat = java.io.ByteArrayOutputStream()
+        var sawEnd = false
+        while (pos < png.size) {
+            val length = ((png[pos].toInt() and 0xFF) shl 24) or
+                ((png[pos + 1].toInt() and 0xFF) shl 16) or
+                ((png[pos + 2].toInt() and 0xFF) shl 8) or
+                (png[pos + 3].toInt() and 0xFF)
+            val type = String(png, pos + 4, 4, Charsets.US_ASCII)
+            val data = png.copyOfRange(pos + 8, pos + 8 + length)
+            when (type) {
+                "IHDR" -> {
+                    width = ((data[0].toInt() and 0xFF) shl 24) or ((data[1].toInt() and 0xFF) shl 16) or
+                        ((data[2].toInt() and 0xFF) shl 8) or (data[3].toInt() and 0xFF)
+                    height = ((data[4].toInt() and 0xFF) shl 24) or ((data[5].toInt() and 0xFF) shl 16) or
+                        ((data[6].toInt() and 0xFF) shl 8) or (data[7].toInt() and 0xFF)
+                    Assert.assertEquals("bit depth", 8, data[8].toInt())
+                    Assert.assertEquals("colour type RGBA", 6, data[9].toInt())
+                }
+                "IDAT" -> idat.write(data)
+                "IEND" -> sawEnd = true
+            }
+            pos += 12 + length
+        }
+        Assert.assertTrue("PNG must end with IEND", sawEnd)
+        Assert.assertTrue("PNG must contain pixel data", idat.size() > 0)
+        val raw = java.util.zip.InflaterInputStream(idat.toByteArray().inputStream()).readBytes()
+        Assert.assertEquals(height * (1 + width * 4), raw.size)
+        // Verify the scanline filter bytes our writer promises.
+        for (y in 0 until height) {
+            Assert.assertEquals("filter byte on row $y", 0, raw[y * (1 + width * 4)].toInt())
+        }
+        return DecodedPng(width, height, raw)
     }
 
     @Test fun renderPerformanceIsInteractiveOnLargeMeshes() {

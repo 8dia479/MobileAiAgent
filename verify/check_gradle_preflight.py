@@ -80,3 +80,25 @@ if problems:
     for p in problems: print("  ✗", p)
     sys.exit(1)
 print("No blockers found for the Gradle build.")
+
+# 8) Test sources run on the JVM, but they compile against the *Android* classpath
+#    in a Gradle Android build: java.awt / javax.imageio do not exist there.
+import glob
+banned = {
+    "javax.imageio": "not available on Android; decode the bytes by hand",
+    "java.awt": "not available on Android",
+    "javax.swing": "not available on Android",
+}
+test_hits = []
+for path in glob.glob("app/src/test/kotlin/**/*.kt", recursive=True):
+    text = open(path).read()
+    for needle, why in banned.items():
+        if needle in text:
+            test_hits.append(f"{path} uses {needle} ({why})")
+if test_hits:
+    problems.extend(test_hits)
+    print("\nTEST SOURCE BLOCKERS:")
+    for h in test_hits:
+        print("  ✗", h)
+    sys.exit(1)
+print("Test sources avoid JVM-only desktop APIs.")
