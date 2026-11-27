@@ -116,8 +116,28 @@ jobs:
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
+      # Gradle's log is not downloadable from every environment, but check-run
+      # annotations are. On failure, emit the compiler errors as ::error::
+      # annotations so they show up on the run page (and via the API).
       - name: Run JVM unit tests
-        run: ./gradlew --no-daemon testDebugUnitTest --stacktrace
+        run: |
+          set +e
+          ./gradlew --no-daemon testDebugUnitTest 2>&1 | tee gradle.log
+          STATUS=${PIPESTATUS[0]}
+          if [ "$STATUS" -ne 0 ]; then
+            echo "Gradle exit $STATUS"
+            echo "=== first 40 error lines ==="
+            grep -E "^e: |error: |FAILURE:|Caused by:|A problem occurred" gradle.log | head -40 || true
+            # Surface up to 10 errors as annotations (each is visible on the run page).
+            grep -E "^e: .*error: |^e: file:.*error" gradle.log | head -10 | while IFS= read -r line; do
+              echo "::error::$(printf '%s' "$line" | sed 's/::/:/g' | cut -c1-900)"
+            done
+            # Also the Gradle failure summary lines.
+            grep -E "^(FAILURE:|\* What went wrong|> Task .* FAILED|> .*Could not|> .*error:)" gradle.log | head -10 | while IFS= read -r line; do
+              echo "::error::$(printf '%s' "$line" | sed 's/::/:/g' | cut -c1-900)"
+            done
+            exit "$STATUS"
+          fi
 
       - name: Assemble debug APK
         run: ./gradlew --no-daemon assembleDebug --stacktrace
