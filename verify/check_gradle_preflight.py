@@ -91,7 +91,10 @@ banned = {
 }
 test_hits = []
 for path in glob.glob("app/src/test/kotlin/**/*.kt", recursive=True):
-    text = open(path).read()
+    # Ignore comments: explaining why an API is unavailable is not using it.
+    text = "\n".join(
+        line.split("//")[0] for line in open(path).read().split("\n")
+    )
     for needle, why in banned.items():
         if needle in text:
             test_hits.append(f"{path} uses {needle} ({why})")
