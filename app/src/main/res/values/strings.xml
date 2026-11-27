@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MobileAIAgent</string>
+    <string name="notification_channel_agent">Agent tasks</string>
+    <string name="notification_channel_agent_desc">Shows progress of running AI tasks</string>
+    <string name="notification_running_title">MobileAIAgent is working</string>
+    <string name="notification_action_open">Open task</string>
+    <string name="notification_action_cancel">Cancel</string>
+    <string name="notification_action_pause">Pause</string>
+    <string name="notification_action_resume">Resume</string>
+</resources>

@@ -1,0 +1,150 @@
+name: Build
+
+# Builds the APK on GitHub's runners, where Google Maven and Maven Central are
+# reachable. The sandbox this project was developed in could only reach npm/PyPI/
+# GitHub, so Gradle could never resolve Compose, Room, Ktor or WorkManager there.
+# That is why the checks are split in two jobs:
+#
+#   verify   – no network needed. Runs the 100+ JVM tests and the whole-app
+#              type-check against the local API stubs. Fast feedback, no Gradle.
+#   build    – real Gradle. Resolves dependencies, runs KSP (Room), assembles the
+#              debug APK, runs the JVM tests again under JUnit, and uploads the
+#              APK. This is the job that proves the app actually compiles.
+#
+# Once the build job is green, the verify job's stubs are no longer load-bearing
+# and can be deleted; until then they are what keeps regressions out.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------- fast checks
+  verify:
+    name: Verify (offline type-check + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch the offline Kotlin toolchain
+        run: ./verify/bootstrap.sh
+
+      # MAA_FAIL_ON_SKIP: the process-spawning tests are skipped where posix_spawn
+      # is blocked (the development sandbox). A runner can always spawn
+      # processes, so a skip there would mean lost coverage, and we fail instead.
+      - name: Run JVM tests + Room schema check
+        env:
+          MAA_FAIL_ON_SKIP: "1"
+        run: ./verify/run.sh
+
+      - name: Type-check the whole app
+        run: ./verify/typecheck-all.sh
+
+      # Catches the class of mistake the offline type-check cannot see but a
+      # real Gradle build fails on: an @Entity missing from @Database, a DAO that
+      # does not exist, a missing R.string/R.drawable, a manifest component with
+      # no source file.
+      - name: Gradle build pre-flight
+        run: python3 verify/check_gradle_preflight.py
+
+  # ------------------------------------------------------------------ real build
+  build:
+    name: Assemble debug APK
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # The repository has no Gradle wrapper: it could not be generated in the
+      # offline sandbox (the wrapper JAR has to come from a Maven repo). The
+      # runner image ships Gradle, so use it directly and then write a wrapper
+      # with the exact version used, which keeps local builds reproducible too.
+      - name: Show Gradle and JDK versions
+        run: |
+          gradle --version
+          echo "AGP 8.7.3 needs Gradle 8.9-8.11 and JDK 17."
+
+      - name: Generate Gradle wrapper (pinned to 8.11.1)
+        run: gradle wrapper --gradle-version 8.11.1 --distribution-type bin
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run JVM unit tests
+        run: ./gradlew --no-daemon testDebugUnitTest --stacktrace
+
+      - name: Assemble debug APK
+        run: ./gradlew --no-daemon assembleDebug --stacktrace
+
+      - name: Report APK
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          ls -lh "$APK"
+          echo "### :package: APK built" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`$(du -h "$APK" | cut -f1)\` — \`app-debug.apk\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download it from the **Artifacts** section of this run." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MobileAIAgent-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: app/build/reports/tests/testDebugUnitTest
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload Room schemas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: room-schemas
+          path: app/schemas
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            app/build/reports/**
+            build/reports/**
+          if-no-files-found: ignore
+          retention-days: 7

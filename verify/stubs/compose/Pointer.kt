@@ -1,0 +1,14 @@
+@file:Suppress("unused", "UNUSED_PARAMETER")
+package androidx.compose.ui.input.pointer
+
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+
+interface PointerInputScope
+
+class PointerInputChange {
+    fun consume() {}
+    val position: Offset get() = Offset(0f, 0f)
+}
+
+fun Modifier.pointerInput(key1: Any?, block: suspend PointerInputScope.() -> Unit): Modifier = this

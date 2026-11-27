@@ -1,0 +1,25 @@
+# Gradle
+.gradle/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Keystores / secrets
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+
+# Toolchain scratch (verification harness)
+.toolchain-verify/
+*.hprof
+
+# Offline verification harness build output
+verify/out/
