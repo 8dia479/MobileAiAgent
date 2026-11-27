@@ -27,19 +27,37 @@ Central. The workflow is `.github/workflows/build.yml`:
 
 | Job | What it proves | Needs network |
 |---|---|---|
-| `verify` | 119 JVM tests + whole-app type-check + Room/AGP pre-flight | no (only npm/PyPI/GitHub) |
+| `verify` | 119 JVM tests + whole-app type-check + Room/AGP/Kotlin pre-flight | no (only npm/PyPI/GitHub) |
 | `build` | Real Gradle: KSP/Room, Compose, **debug APK**, JUnit tests | yes |
 
-The APK is attached to every run under **Artifacts → `MobileAIAgent-debug`**, and
-a size summary is written to the run summary. Test reports, the exported Room
-schemas and logs-on-failure are uploaded too.
+**Current status: both jobs green, APK built** (run 45974477545).
+Download: <https://github.com/8dia479/MobileAiAgent/releases/download/debug-apk/>
 
-`verify` runs first and is fast; `build` only starts if it passes. The CI sets
+The APK is published as a rolling **release** asset (`debug-apk` tag) because the
+account's artifact storage quota was exhausted during development, which made
+`upload-artifact` fail. It is still attached per-run when the quota allows.
+
+`verify` runs first and is fast; `build` only starts if it passes. CI sets
 `MAA_FAIL_ON_SKIP=1`, so a test that could not run fails the build instead of
 silently reducing coverage.
 
-> The workflow has not been executed yet — it was authored in a sandbox with no
-> access to GitHub Actions. The first run is the real test of it.
+### What CI caught that the offline checks could not
+
+Series of four real failures, each fixed:
+
+1. `bootstrap.sh` requested `jdk4py==25.0.5.1.1` (a version that does not exist)
+   and used `pip`, which is not always on a runner's PATH.
+2. `KtorHttpTransport` called `client.get`/`post` without importing them — the
+   stubs had declared them as members of `HttpClient`, so the call compiled
+   offline and failed against real Ktor.
+3. `Card(onClick = …, Modifier…)` positionally, and `Alignment.Vertical.Top` /
+   `Horizontal.Start`, which **do not exist** in Compose. The stub had invented
+   those members. Verified against
+   `androidx-main .../compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Alignment.kt`.
+4. `MeshRendererTest` used `javax.imageio`, which is not on the Android classpath.
+
+Each one is now covered by a check that runs without network access
+(`check_gradle_preflight.py`, `check_kotlin_language.py`, faithful stubs).
 
 ### Why the sandbox has no APK
 

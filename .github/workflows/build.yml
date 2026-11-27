@@ -181,6 +181,26 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
+      # Artifact storage is quota-limited (it was exhausted during development).
+      # A release asset has no such limit and gives a permanent download link.
+      - name: Publish APK to a rolling release
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/arena/')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          TAG=debug-apk
+          SHA=$(git rev-parse --short HEAD)
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "Debug APK" \
+              --notes "Automatic debug builds. Latest: commit $SHA on ${{ github.ref_name }}." --prerelease
+          cp "$APK" "app-debug-$SHA.apk"
+          gh release upload "$TAG" "app-debug-$SHA.apk" --clobber
+          echo "### :link: APK download" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/${{ github.repository }}/releases/download/$TAG/app-debug-$SHA.apk" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload build logs on failure
         if: failure()
         continue-on-error: true
