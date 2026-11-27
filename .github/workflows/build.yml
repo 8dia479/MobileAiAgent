@@ -55,10 +55,20 @@ jobs:
       - name: Run JVM tests + Room schema check
         env:
           MAA_FAIL_ON_SKIP: "1"
-        run: ./verify/run.sh 2>&1 | tee test.log
+        run: |
+          ./verify/run.sh 2>&1 | tee test.log
+          echo "### :white_check_mark: Tests" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          grep -E '^====' test.log >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Type-check the whole app
-        run: ./verify/typecheck-all.sh 2>&1 | tee typecheck.log
+        run: |
+          ./verify/typecheck-all.sh 2>&1 | tee typecheck.log
+          echo "### :white_check_mark: Type-check" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -1 typecheck.log >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       # Catches the class of mistake the offline type-check cannot see but a
       # real Gradle build fails on: an @Entity missing from @Database, a DAO that
@@ -69,6 +79,7 @@ jobs:
 
       - name: Upload verify logs
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: verify-logs
@@ -122,6 +133,7 @@ jobs:
           echo "Download it from the **Artifacts** section of this run." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload APK
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: MobileAIAgent-debug
@@ -131,6 +143,7 @@ jobs:
 
       - name: Upload test report
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-report
@@ -140,6 +153,7 @@ jobs:
 
       - name: Upload Room schemas
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: room-schemas
@@ -149,6 +163,7 @@ jobs:
 
       - name: Upload build logs on failure
         if: failure()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
