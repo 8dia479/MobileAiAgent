@@ -279,7 +279,7 @@ private fun EventTimeline(state: ChatUiState) {
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         items(state.events, key = { it.id }) { event ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Vertical.Top) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
                 Text(
                     java.time.Instant.ofEpochMilli(event.timestamp)
                         .atZone(java.time.ZoneId.systemDefault())
@@ -304,7 +304,7 @@ private fun MessageBubble(message: ChatMessage) {
     val isUser = message.role == ChatMessage.Role.USER
     val isTool = message.role == ChatMessage.Role.TOOL
     val isSystem = message.role == ChatMessage.Role.SYSTEM
-    val alignment: Alignment.Horizontal = if (isUser) Alignment.Horizontal.End else Alignment.Horizontal.Start
+    val alignment: Alignment.Horizontal = if (isUser) Alignment.End else Alignment.Start
     val container = when {
         isUser -> MaterialTheme.colorScheme.primaryContainer
         isTool -> MaterialTheme.colorScheme.surfaceVariant
@@ -511,7 +511,7 @@ private fun ChatComposer(
                     ReasoningSelector(reasoning, ReasoningEffort.entries.toSet(), onReasoningChange)
                 }
             }
-            Row(verticalAlignment = Alignment.Vertical.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = value,
                     onValueChange = onValueChange,

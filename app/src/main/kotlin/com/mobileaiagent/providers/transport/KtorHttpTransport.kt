@@ -12,6 +12,7 @@ import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
+import okhttp3.MediaType.Companion.toMediaType
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.isSuccess
@@ -148,4 +149,5 @@ class KtorHttpTransport(
     }
 }
 
-private fun String.toMediaTypeOrNull(): okhttp3.MediaType? = okhttp3.MediaType.parse("application/json")
+private fun String.toMediaTypeOrNull(): okhttp3.MediaType? =
+    runCatching { "application/json".toMediaType() }.getOrNull()

@@ -26,8 +26,8 @@ fun Modifier.size(size: Dp): Modifier = this
 fun Modifier.size(width: Dp, height: Dp): Modifier = this
 fun Modifier.widthIn(min: Dp = Dp.Unspecified, max: Dp = Dp.Unspecified): Modifier = this
 fun Modifier.heightIn(min: Dp = Dp.Unspecified, max: Dp = Dp.Unspecified): Modifier = this
-fun Modifier.wrapContentWidth(align: Alignment.Horizontal = Alignment.Horizontal.Start): Modifier = this
-fun Modifier.wrapContentHeight(align: Alignment.Vertical = Alignment.Vertical.Top): Modifier = this
+fun Modifier.wrapContentWidth(align: Alignment.Horizontal = Alignment.Start): Modifier = this
+fun Modifier.wrapContentHeight(align: Alignment.Vertical = Alignment.Top): Modifier = this
 
 // ------------------------------------------------------------------ weight
 
@@ -51,7 +51,7 @@ interface BoxScope {
 fun Row(
     modifier: Modifier = Modifier,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    verticalAlignment: Alignment.Vertical = Alignment.Vertical.Top,
+    verticalAlignment: Alignment.Vertical = Alignment.Top,
     content: @Composable RowScope.() -> Unit,
 ) = Unit
 
@@ -59,7 +59,7 @@ fun Row(
 fun Column(
     modifier: Modifier = Modifier,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
-    horizontalAlignment: Alignment.Horizontal = Alignment.Horizontal.Start,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable ColumnScope.() -> Unit,
 ) = Unit
 

@@ -59,7 +59,7 @@ fun LazyColumn(
     state: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(androidx.compose.ui.unit.Dp.Zero),
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
-    horizontalAlignment: Alignment.Horizontal = Alignment.Horizontal.Start,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: LazyListScope.() -> Unit,
 ) = Unit
 
@@ -69,7 +69,7 @@ fun LazyRow(
     state: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(androidx.compose.ui.unit.Dp.Zero),
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    verticalAlignment: Alignment.Vertical = Alignment.Vertical.Top,
+    verticalAlignment: Alignment.Vertical = Alignment.Top,
     content: LazyListScope.() -> Unit,
 ) = Unit
 

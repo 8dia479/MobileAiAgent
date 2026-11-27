@@ -2,31 +2,49 @@
 
 package androidx.compose.ui
 
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 
 /**
- * Mirrors the real shape closely enough that `Alignment.CenterVertically` resolves
- * to the *Vertical* nested object member (how Compose actually declares it),
- * while `Alignment.Center` / `.TopStart` resolve to plain Alignment values.
+ * Mirrors the real androidx.compose.ui.Alignment (verified against
+ * androidx-main compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Alignment.kt):
+ *
+ *   fun interface Horizontal
+ *   fun interface Vertical
+ *   companion object {
+ *       val Top: Vertical          = BiasAlignment.Vertical(-1f)
+ *       val CenterVertically: Vertical = …
+ *       val Bottom: Vertical       = BiasAlignment.Vertical(1f)
+ *       val Start: Horizontal      = BiasAlignment.Horizontal(-1f)
+ *       val CenterHorizontally: Horizontal = …
+ *       val End: Horizontal        = BiasAlignment.Horizontal(1f)
+ *       // 2-D values: TopStart … BottomEnd, Center
+ *   }
+ *
+ * So `Alignment.Vertical.Top` does NOT exist — that mistake is what the first
+ * real Gradle build reported. Keep this file faithful; a permissive stub here
+ * silently hides compile errors in every alignment call in the app.
  */
 open class Alignment {
-    open class Horizontal {
-        companion object {
-            val Start: Horizontal = object : Horizontal() {}
-            val End: Horizontal = object : Horizontal() {}
-            val CenterHorizontally: Horizontal = object : Horizontal() {}
-        }
+    fun interface Horizontal {
+        fun align(size: Int, space: Int, layoutDirection: LayoutDirection): Int
     }
 
-    open class Vertical {
-        companion object {
-            val Top: Vertical = object : Vertical() {}
-            val Bottom: Vertical = object : Vertical() {}
-            val CenterVertically: Vertical = object : Vertical() {}
-        }
+    fun interface Vertical {
+        fun align(size: Int, space: Int): Int
     }
 
     companion object {
+        // Vertical alignments
+        val Top: Vertical = Vertical { _, _ -> 0 }
+        val CenterVertically: Vertical = Vertical { _, _ -> 0 }
+        val Bottom: Vertical = Vertical { _, _ -> 0 }
+
+        // Horizontal alignments
+        val Start: Horizontal = Horizontal { _, _, _ -> 0 }
+        val CenterHorizontally: Horizontal = Horizontal { _, _, _ -> 0 }
+        val End: Horizontal = Horizontal { _, _, _ -> 0 }
+
+        // 2-D alignments
         val TopStart: Alignment = Alignment()
         val TopCenter: Alignment = Alignment()
         val TopEnd: Alignment = Alignment()
@@ -36,18 +54,5 @@ open class Alignment {
         val BottomStart: Alignment = Alignment()
         val BottomCenter: Alignment = Alignment()
         val BottomEnd: Alignment = Alignment()
-
-        // Box/Scaffold use these names as Alignment values.
-        val Top: Alignment = TopCenter
-        val Bottom: Alignment = BottomCenter
-        val Start: Alignment = CenterStart
-        val End: Alignment = CenterEnd
-
-        // Row/Column take Alignment.Vertical / Alignment.Horizontal, and Kotlin
-        // resolves these companion-level names the same way it resolves the real
-        // nested-object members used in Android code.
-        val CenterVertically: Vertical = Vertical.CenterVertically
-        val CenterHorizontally: Horizontal = Horizontal.CenterHorizontally
     }
 }
-

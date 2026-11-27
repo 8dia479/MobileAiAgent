@@ -4,10 +4,16 @@ package okhttp3
 /** okhttp3 type-check stubs (used directly by KtorHttpTransport for streaming). */
 class MediaType {
     companion object {
+        /** Deprecated in OkHttp 4; kept so old call sites still resolve. */
+        @Deprecated("moved to extension function", ReplaceWith("toMediaType()"))
         fun parse(value: String): MediaType? = MediaType()
+
+        /** okhttp3.MediaType.Companion.toMediaType — the replacement for parse(). */
+        fun String.toMediaType(): MediaType = MediaType()
     }
 }
 fun String.toMediaTypeOrNull(): MediaType = MediaType()
+
 
 
 class RequestBody {
