@@ -145,14 +145,23 @@ jobs:
         run: ./gradlew --no-daemon assembleDebug --stacktrace
 
       - name: Report artifact storage
-        if: failure() && steps.upload-apk.outcome == 'failure'
+        if: always()
         run: |
-          echo "### :warning: Artifact upload failed" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "GitHub's per-account artifact storage quota is exhausted, so" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`upload-artifact\` cannot store the APK. The build itself succeeded." >> "$GITHUB_STEP_SUMMARY"
-          echo "Download the APK from the release asset instead:" >> "$GITHUB_STEP_SUMMARY"
-          echo "https://github.com/${{ github.repository }}/releases/tag/debug-apk" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.upload-apk.outcome }}" = "success" ]; then
+            echo "### :white_check_mark: APK available" >> "$GITHUB_STEP_SUMMARY"
+            echo "Run artifact \`MobileAIAgent-debug\` **and** the release asset below." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### :warning: APK is in the release, not in Artifacts" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "The build succeeded, but GitHub's per-account artifact storage" >> "$GITHUB_STEP_SUMMARY"
+            echo "quota is exhausted (\`Failed to CreateArtifact\`), so the run-page" >> "$GITHUB_STEP_SUMMARY"
+            echo "artifact cannot be stored. This is an account limit, not a build" >> "$GITHUB_STEP_SUMMARY"
+            echo "failure, and it is why \*Artifacts\* can be empty while the build" >> "$GITHUB_STEP_SUMMARY"
+            echo "is green. Release assets are not subject to that quota:" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Download:** https://github.com/${{ github.repository }}/releases/tag/debug-apk" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Report APK
         run: |
@@ -184,6 +193,12 @@ jobs:
               --notes "Automatic debug builds. Latest: commit $SHA on ${{ github.ref_name }}." --prerelease \
               || echo "WARNING: could not create release (needs contents: write)"
           fi
+          # Replace previous APKs so the release holds exactly one 21 MB asset
+          # rather than growing by 21 MB per commit.
+          gh release view "$TAG" --json assets -q '.assets[].name' 2>/dev/null \
+            | grep '\.apk$' | while IFS= read -r old; do
+                gh release delete-asset "$TAG" "$old" --yes 2>/dev/null || true
+              done
           cp "$APK" "app-debug-$SHA.apk"
           gh release upload "$TAG" "app-debug-$SHA.apk" --clobber
           echo "### :link: APK download" >> "$GITHUB_STEP_SUMMARY"
