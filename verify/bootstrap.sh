@@ -34,7 +34,15 @@ trap 'rm -rf "$TMP"' EXIT
 # ------------------------------------------------------------------- JDK
 if [ ! -x "$ROOT/jdk/bin/java" ]; then
   log "downloading JDK $JDK_VER (jdk4py)"
-  pip download "jdk4py==$JDK_VER" --no-deps -d "$TMP/jdk" >/dev/null
+  if command -v pip >/dev/null 2>&1; then
+    pip download "jdk4py==$JDK_VER" --no-deps -d "$TMP/jdk" >/dev/null
+  elif python3 -m pip --version >/dev/null 2>&1; then
+    python3 -m pip download "jdk4py==$JDK_VER" --no-deps -d "$TMP/jdk" >/dev/null
+  else
+    echo "ERROR: neither 'pip' nor 'python3 -m pip' is available." >&2
+    echo "       The JDK step needs one of them; install pip or pre-install a JDK." >&2
+    exit 1
+  fi
   python3 - "$TMP/jdk" "$TMP/jdkx" <<'PY'
 import sys, zipfile, pathlib
 src, dst = sys.argv[1], sys.argv[2]

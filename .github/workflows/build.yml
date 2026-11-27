@@ -47,7 +47,7 @@ jobs:
           python-version: "3.12"
 
       - name: Fetch the offline Kotlin toolchain
-        run: ./verify/bootstrap.sh
+        run: ./verify/bootstrap.sh 2>&1 | tee bootstrap.log
 
       # MAA_FAIL_ON_SKIP: the process-spawning tests are skipped where posix_spawn
       # is blocked (the development sandbox). A runner can always spawn
@@ -55,10 +55,10 @@ jobs:
       - name: Run JVM tests + Room schema check
         env:
           MAA_FAIL_ON_SKIP: "1"
-        run: ./verify/run.sh
+        run: ./verify/run.sh 2>&1 | tee test.log
 
       - name: Type-check the whole app
-        run: ./verify/typecheck-all.sh
+        run: ./verify/typecheck-all.sh 2>&1 | tee typecheck.log
 
       # Catches the class of mistake the offline type-check cannot see but a
       # real Gradle build fails on: an @Entity missing from @Database, a DAO that
@@ -66,6 +66,15 @@ jobs:
       # no source file.
       - name: Gradle build pre-flight
         run: python3 verify/check_gradle_preflight.py
+
+      - name: Upload verify logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-logs
+          path: "*.log"
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ------------------------------------------------------------------ real build
   build:
