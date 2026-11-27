@@ -30,12 +30,20 @@ Central. The workflow is `.github/workflows/build.yml`:
 | `verify` | 119 JVM tests + whole-app type-check + Room/AGP/Kotlin pre-flight | no (only npm/PyPI/GitHub) |
 | `build` | Real Gradle: KSP/Room, Compose, **debug APK**, JUnit tests | yes |
 
-**Current status: both jobs green, APK built** (run 45974477545).
-Download: <https://github.com/8dia479/MobileAiAgent/releases/download/debug-apk/>
+**Current status: both jobs green, APK built and published** (run 45976509830).
 
-The APK is published as a rolling **release** asset (`debug-apk` tag) because the
-account's artifact storage quota was exhausted during development, which made
-`upload-artifact` fail. It is still attached per-run when the quota allows.
+Download: **<https://github.com/8dia479/MobileAiAgent/releases/tag/debug-apk>**
+(the `debug-apk` release → `app-debug-<sha>.apk`, 21.1 MB). The repository is
+private, so you must be signed in to GitHub to fetch it.
+
+The APK is published as a rolling **release** asset rather than a per-run
+artifact because the account's artifact storage quota was exhausted during
+development, which made `upload-artifact` fail even on a green build. Per-run
+artifacts are still attached whenever the quota allows.
+
+Also granted `contents: write` — the first release attempt reported success while
+creating nothing, because the workflow only had `contents: read` and
+`continue-on-error` hid the permission error.
 
 `verify` runs first and is fast; `build` only starts if it passes. CI sets
 `MAA_FAIL_ON_SKIP=1`, so a test that could not run fails the build instead of
