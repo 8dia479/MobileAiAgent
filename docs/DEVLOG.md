@@ -38,32 +38,30 @@ private, so you must be signed in to GitHub to fetch it.
 
 ### Why Artifacts is empty even on a green build
 
-This is a **GitHub account limit, not a build problem**, and it is worth being
-explicit about because the symptom is confusing:
+This is a **GitHub account limit, not a build problem**. Verified across five
+consecutive runs (46022378168 is the latest):
+
+| Step | Outcome |
+|---|---|
+| `Assemble debug APK` | **success** — `app-debug.apk`, 21.1 MB |
+| `Publish APK to a rolling release` | **success** |
+| `Upload APK` | reports success, stores nothing |
+
+Every run, including green ones, contributes **0 artifacts to the repository**
+(`actions/artifacts?per_page=100` → `total_count: 0`). The annotations say why:
 
 ```
-Assemble debug APK                -> success   (app-debug.apk, 21.1 MB)
-Publish APK to a rolling release  -> success
-Upload APK                        -> upload-artifact: Failed to CreateArtifact:
-                                     Artifact storage quota has been hit.
+Failed to CreateArtifact: Artifact storage quota has been hit.
+Unable to upload any new artifacts. Usage is recalculated every 6-12 hours.
 ```
 
-* Per-account artifact storage is exhausted, so `upload-artifact` stores nothing.
-  The repository contains **0 artifacts for every run**, including successful ones.
-* It resets every 6–12 h, and the step is `continue-on-error`, so it will start
-  populating by itself once the quota returns — no code change needed.
-* **Release assets are not covered by that quota**, so the APK is published there.
+Because `upload-artifact` is `continue-on-error` the step shows green, which makes
+the empty Artifacts tab look like a broken upload rather than a full quota.
 
-The run summary now states this explicitly instead of leaving an empty Artifacts
-tab to be interpreted as a failed build.
-
-Also granted `contents: write` — the first release attempt reported success while
-creating nothing, because the workflow only had `contents: read` and
-`continue-on-error` hid the permission error.
-
-`verify` runs first and is fast; `build` only starts if it passes. CI sets
-`MAA_FAIL_ON_SKIP=1`, so a test that could not run fails the build instead of
-silently reducing coverage.
+* It resets every 6–12 h; the upload starts working again by itself, no code
+  change needed.
+* **Release assets are not covered by that quota**, so that is where the APK is.
+* The run summary states this explicitly so the empty tab is not misread.
 
 ### What CI caught that the offline checks could not
 
