@@ -30,38 +30,31 @@ Central. The workflow is `.github/workflows/build.yml`:
 | `verify` | 119 JVM tests + whole-app type-check + Room/AGP/Kotlin pre-flight | no (only npm/PyPI/GitHub) |
 | `build` | Real Gradle: KSP/Room, Compose, **debug APK**, JUnit tests | yes |
 
-**Current status: both jobs green, APK built and published** (run 45976509830).
+**Current status: both jobs green, APK built, artifact stored, release published**
+(run 46028213145, commit `1b86f04`).
 
 Download: **<https://github.com/8dia479/MobileAiAgent/releases/tag/debug-apk>**
 (the `debug-apk` release → `app-debug-<sha>.apk`, 21.1 MB). The repository is
 private, so you must be signed in to GitHub to fetch it.
 
-### Why Artifacts is empty even on a green build
+### Artifacts
 
-This is a **GitHub account limit, not a build problem**. Verified across five
-consecutive runs (46022378168 is the latest):
+Repository artifacts were empty for every run while the repository was **private**:
+GitHub's per-account artifact storage quota was exhausted, so `upload-artifact`
+reported success and stored nothing.
 
-| Step | Outcome |
+After the repository was made **public** the quota no longer applies and artifacts
+are stored normally. Latest green run (46028213145) has four:
+
+| Artifact | Size |
 |---|---|
-| `Assemble debug APK` | **success** — `app-debug.apk`, 21.1 MB |
-| `Publish APK to a rolling release` | **success** |
-| `Upload APK` | reports success, stores nothing |
+| `MobileAIAgent-debug` (the APK) | 20.6 MB |
+| `unit-test-report` | 23 KB |
+| `room-schemas` | 2.5 KB |
+| `verify-logs` | 609 B |
 
-Every run, including green ones, contributes **0 artifacts to the repository**
-(`actions/artifacts?per_page=100` → `total_count: 0`). The annotations say why:
-
-```
-Failed to CreateArtifact: Artifact storage quota has been hit.
-Unable to upload any new artifacts. Usage is recalculated every 6-12 hours.
-```
-
-Because `upload-artifact` is `continue-on-error` the step shows green, which makes
-the empty Artifacts tab look like a broken upload rather than a full quota.
-
-* It resets every 6–12 h; the upload starts working again by itself, no code
-  change needed.
-* **Release assets are not covered by that quota**, so that is where the APK is.
-* The run summary states this explicitly so the empty tab is not misread.
+The APK is also published to the `debug-apk` release
+(`app-debug-<sha>.apk`, 21.1 MB), which never depended on the artifact quota.
 
 ### What CI caught that the offline checks could not
 
