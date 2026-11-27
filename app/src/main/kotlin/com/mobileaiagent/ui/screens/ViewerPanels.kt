@@ -95,9 +95,10 @@ fun MeshViewerPanel(file: File, modifier: Modifier = Modifier) {
             var autoRotate by remember(file.path) { mutableStateOf(false) }
             var showWireframe by remember(file.path) { mutableStateOf(true) }
             val density = androidx.compose.ui.platform.LocalDensity.current
-            // Density.toPx is a member of Density in Compose; this mirrors it exactly.
-            val widthPx = with(density) { 320.dp.toPx().toInt() }
-            val heightPx = with(density) { 260.dp.toPx().toInt() }
+            // Compose exposes Density.toPx() as a member extension, so this is the
+            // idiomatic call; `density.run { }` would be equally valid.
+            val widthPx = with(density) { 320.dp.roundToPx() }
+            val heightPx = with(density) { 260.dp.roundToPx() }
 
             LaunchedEffect(mesh, camera, showWireframe, widthPx, heightPx) {
                 if (mesh.triangleCount == 0) return@LaunchedEffect

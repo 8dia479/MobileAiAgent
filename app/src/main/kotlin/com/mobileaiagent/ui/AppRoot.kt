@@ -52,8 +52,9 @@ fun AppRoot(
 
     Scaffold(
         bottomBar = {
-            if (windowSizeClass == WindowSize.MEDIUM_OR_LARGER) return@Scaffold
-            NavigationBar {
+            // Guard with if/else: a `return@Scaffold` would exit the whole
+            // Scaffold call, which is not the intent and is easy to misread.
+            if (windowSizeClass != WindowSize.MEDIUM_OR_LARGER) NavigationBar {
                 Destination.bottomBar.forEach { destination ->
                     val selected = backStack?.destination?.hierarchy?.any { it.route == destination.route } == true
                     NavigationBarItem(

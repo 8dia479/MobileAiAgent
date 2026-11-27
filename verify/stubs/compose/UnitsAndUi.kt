@@ -38,10 +38,17 @@ enum class LayoutDirection { Ltr, Rtl }
 
 class IntSize(val width: Int, val height: Int)
 
+/**
+ * Mirrors androidx.compose.ui.unit.Density: toPx/roundToPx/toSp are *member
+ * extensions*, which is why `with(density) { 16.dp.toPx() }` compiles.
+ */
 interface Density {
     val density: Float
     fun Dp.toPx(): Float = value * density
+    fun Dp.roundToPx(): Int = (value * density).toInt()
     fun Dp.toSp(): TextUnit = TextUnit(value)
 }
+
+fun FontScaleConverter(): Unit = Unit
 
 

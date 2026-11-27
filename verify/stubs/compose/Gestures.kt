@@ -4,8 +4,9 @@ package androidx.compose.foundation.gestures
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 
-fun Modifier.pointerInput(key1: Any?, block: suspend androidx.compose.ui.input.pointer.PointerInputScope.() -> Unit): Modifier = this
-fun Modifier.pointerInput(vararg keys: Any?, block: suspend androidx.compose.ui.input.pointer.PointerInputScope.() -> Unit): Modifier = this
+// NOTE: pointerInput lives in androidx.compose.ui.input.pointer (see Pointer.kt),
+// not here. It used to be duplicated in this file with a vararg overload that the
+// real API does not have, which let a non-compiling call pass the type-check.
 
 suspend fun androidx.compose.ui.input.pointer.PointerInputScope.detectDragGestures(
     onDragStart: (Offset) -> Unit = {},

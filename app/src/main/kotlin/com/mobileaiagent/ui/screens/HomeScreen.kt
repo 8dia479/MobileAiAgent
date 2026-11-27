@@ -58,7 +58,7 @@ fun HomeScreen(
             )
         }
         item {
-            Card(onClick = { onNavigate(Destination.Chat) }, Modifier.fillMaxWidth()) {
+            Card(onClick = { onNavigate(Destination.Chat) }, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)

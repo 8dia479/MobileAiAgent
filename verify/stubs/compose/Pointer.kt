@@ -11,4 +11,8 @@ class PointerInputChange {
     val position: Offset get() = Offset(0f, 0f)
 }
 
+/**
+ * Exactly the real signature: one key, no vararg. `pointerInput(a, b) { }` does
+ * not compile on the real library and must not compile here either.
+ */
 fun Modifier.pointerInput(key1: Any?, block: suspend PointerInputScope.() -> Unit): Modifier = this
